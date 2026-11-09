@@ -1,0 +1,59 @@
+$ BEFORE sending:
+logs/s1.txt:0
+logs/s2.txt:0
+61: s1-eth2@s2-eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether 5e:18:e2:d8:39:11 brd ff:ff:ff:ff:ff:ff
+    RX:  bytes packets errors dropped  missed   mcast           
+           180       2      0       0       0       0 
+    TX:  bytes packets errors dropped carrier collsns           
+           266       3      0       0       0       0 
+$ h1 python3 send.py 10.82.0.3 "loop" --tunnel 3
+###[ Ethernet ]### 
+  dst       = ff:ff:ff:ff:ff:ff
+  src       = 00:00:00:00:00:01
+  type      = 0x1212
+###[ MyTunnel ]### 
+     proto_id  = 2048
+     dst_id    = 3
+     hop_limit = 8
+###[ IP ]### 
+        version   = 4
+        ihl       = 5
+        tos       = 0x0
+        len       = 32
+        id        = 1
+        flags     = 
+        frag      = 0
+        ttl       = 64
+        proto     = udp
+        chksum    = 0x6625
+        src       = 10.82.0.1
+        dst       = 10.82.0.3
+        \options   \
+###[ UDP ]### 
+           sport     = 4321
+           dport     = 4321
+           len       = 12
+           chksum    = 0xed8c
+###[ Raw ]### 
+              load      = 'loop'
+
+Sent from h1-eth0.
+$ AFTER sending (and again 5 s later):
+logs/s1.txt:5
+logs/s2.txt:4
+logs/s1.txt:5
+logs/s2.txt:4
+61: s1-eth2@s2-eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether 5e:18:e2:d8:39:11 brd ff:ff:ff:ff:ff:ff
+    RX:  bytes packets errors dropped  missed   mcast           
+           384       6      0       0       0       0 
+    TX:  bytes packets errors dropped carrier collsns           
+           470       7      0       0       0       0 
+$ tcpdump on s1-eth2 (5th byte after 1212 is hop_limit):
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on s1-eth2, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
