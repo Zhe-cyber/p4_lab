@@ -1,0 +1,43 @@
+$ ./p4cli s2 table_dump MyIngress.myTunnel_exact   (after table_modify of handle 2 to port 1)
+Done
+==========
+TABLE ENTRIES
+**********
+Dumping entry 0x0
+Match key:
+* myTunnel.dst_id     : EXACT     0001
+Action entry: MyIngress.myTunnel_forward - 01
+**********
+Dumping entry 0x1
+Match key:
+* myTunnel.dst_id     : EXACT     0002
+Action entry: MyIngress.myTunnel_forward - 02
+**********
+Dumping entry 0x2
+Match key:
+* myTunnel.dst_id     : EXACT     0003
+Action entry: MyIngress.myTunnel_forward - 01
+==========
+Dumping default entry
+Action entry: MyIngress.drop - 
+==========
+$ grep -c "Processing packet received" logs/s1.txt logs/s2.txt
+logs/s1.txt:810
+logs/s2.txt:808
+$ sleep 5; grep -c ...
+logs/s1.txt:17
+logs/s2.txt:14
+$ ip -s link show s1-eth2
+31: s1-eth2@s2-eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether 66:9f:99:2a:08:1b brd ff:ff:ff:ff:ff:ff
+    RX:  bytes packets errors dropped  missed   mcast           
+      15518240  310364      0       0       0       0 
+    TX:  bytes packets errors dropped carrier collsns           
+      15518240  310364      0       0       0       0 
+$ sleep 5; ip -s link show s1-eth2
+31: s1-eth2@s2-eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether 66:9f:99:2a:08:1b brd ff:ff:ff:ff:ff:ff
+    RX:  bytes packets errors dropped  missed   mcast           
+      15624440  312488      0       0       0       0 
+    TX:  bytes packets errors dropped carrier collsns           
+      15624490  312489      0       0       0       0 
