@@ -1,6 +1,6 @@
 # Week 5 assignment — Put a limit on the tunnel
 
-Student ID (last 4 digits only): **NNNN**
+Student ID (last 4 digits only): **4982**
 
 Write each section in your own words, about your own runs. Quote the evidence files in
 `assignment/evidence/` that support each point. Delete the instructions in `<!-- -->` as you go.
@@ -35,9 +35,19 @@ Write each section in your own words, about your own runs. Quote the evidence fi
 
 ## 5. Evaluation
 
-<!-- a) The mixed rollout (mixed.txt): what did you predict before running s1 with your new
+<!-- a) The mixed rollout (mixed.txt): what  did you predict before running s1 with your new
         program and s2 with tunnel_v1.p4? What actually happened to delivery, and to the loop?
         Explain every difference from your prediction, byte by byte if you need to.
+
+        **Prediction before test:**
+        s1 sends the new 5-byte tunnel header: proto_id (2 bytes), dst_id(2 bytes) and hop_limit (1 byte). s2 still runs the old program, so it only knows the 4-byte header.
+
+        Delivery: I put hop_limit at the end of the header, so the old s2 still finds proto_id and dst_id in the same place. I expect s2 to read dst_id=2 correctly and forward the packet out of the port 2 to h2, so the forwarding should still work.
+
+        But s2 think the IPv4 header start strainght after the 4byte tunnel header, so it will read my hop_limit byte as the first byte. s2 does not change IPv4 field on the tunnel path, but the program still recalculates the ipv4 checksum for any valid ipv44 header. So if checksum written in wrong position means it will damage the real header. Causing h2 might not accept the packet even though it was forwarded correctly.
+
+        For the loop, s2 does not know about the hop_limit so it will not decrease it. Only s1 will count down.
+
      b) Propose a safe way to roll out a header change across a network of switches that can't
         all be upgraded at once. Compare at least two options (for example a version field, a
         new EtherType, or ordering fields so old switches still parse them).
