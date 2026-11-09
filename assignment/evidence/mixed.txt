@@ -1,0 +1,84 @@
+$ h1 python3 send.py 10.82.0.3 "mixed" --tunnel 2
+###[ Ethernet ]### 
+  dst       = ff:ff:ff:ff:ff:ff
+  src       = 00:00:00:00:00:01
+  type      = 0x1212
+###[ MyTunnel ]### 
+     proto_id  = 2048
+     dst_id    = 2
+     hop_limit = 8
+###[ IP ]### 
+        version   = 4
+        ihl       = 5
+        tos       = 0x0
+        len       = 33
+        id        = 1
+        flags     = 
+        frag      = 0
+        ttl       = 64
+        proto     = udp
+        chksum    = 0x6624
+        src       = 10.82.0.1
+        dst       = 10.82.0.3
+        \options   \
+###[ UDP ]### 
+           sport     = 4321
+           dport     = 4321
+           len       = 13
+           chksum    = 0x7f9b
+###[ Raw ]### 
+              load      = 'mixed'
+
+Sent from h1-eth0.
+$ cat logs/h2.txt  (what receive.py on h2 printed)
+Listening on h2-eth0...
+$ (tcpdump capture on h2 recorded 0 packets - background capture did not work in this
+   Codespace, so the s2 log below is used instead to show what reached h2)
+$ LOOP TEST - s2 exit 3 -> port 1.  BEFORE:
+logs/s1.txt:1
+logs/s2.txt:1
+$ h1 python3 send.py 10.82.0.3 "loop" --tunnel 3
+$ AFTER (and again 5 s later):
+logs/s1.txt:10
+logs/s2.txt:9
+logs/s1.txt:10
+logs/s2.txt:9
+$ sed -n 58,95p logs/s2.txt  (old s2 handling the "mixed" packet)
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Parser 'parser' entering state 'parse_myTunnel'
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Extracting header 'myTunnel'
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Parser state 'parse_myTunnel': key is 0800
+[18:00:16.138] [bmv2] [T] [thread 67104] [0.0] [cxt 0] Bytes parsed: 18
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Parser 'parser' entering state 'parse_ipv4'
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Extracting header 'ipv4'
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Parser state 'parse_ipv4' has no switch, going to default next state
+[18:00:16.138] [bmv2] [T] [thread 67104] [0.0] [cxt 0] Bytes parsed: 38
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Parser 'parser': end
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Pipeline 'ingress': start
+[18:00:16.138] [bmv2] [T] [thread 67104] [0.0] [cxt 0] tunnel_v1.p4(125) Condition "hdr.myTunnel.isValid()" (node_2) is true
+[18:00:16.138] [bmv2] [T] [thread 67104] [0.0] [cxt 0] Applying table 'MyIngress.myTunnel_exact'
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Looking up key:
+* hdr.myTunnel.dst_id : 0002
+
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Table 'MyIngress.myTunnel_exact': hit with handle 1
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Dumping entry 1
+Match key:
+* hdr.myTunnel.dst_id : EXACT     0002
+Action entry: MyIngress.myTunnel_forward - 2,
+
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Action entry is MyIngress.myTunnel_forward - 2,
+[18:00:16.138] [bmv2] [T] [thread 67104] [0.0] [cxt 0] Action MyIngress.myTunnel_forward
+[18:00:16.138] [bmv2] [T] [thread 67104] [0.0] [cxt 0] tunnel_v1.p4(114) Primitive standard_metadata.egress_spec = port
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Pipeline 'ingress': end
+[18:00:16.138] [bmv2] [D] [thread 67104] [0.0] [cxt 0] Egress port is 2
+[18:00:16.138] [bmv2] [D] [thread 67107] [0.0] [cxt 0] Pipeline 'egress': start
+[18:00:16.138] [bmv2] [D] [thread 67107] [0.0] [cxt 0] Pipeline 'egress': end
+[18:00:16.138] [bmv2] [D] [thread 67107] [0.0] [cxt 0] Deparser 'deparser': start
+[18:00:16.138] [bmv2] [D] [thread 67107] [0.0] [cxt 0] Updating checksum 'cksum'
+[18:00:16.138] [bmv2] [D] [thread 67107] [0.0] [cxt 0] Deparsing header 'ethernet'
+[18:00:16.138] [bmv2] [D] [thread 67107] [0.0] [cxt 0] Deparsing header 'myTunnel'
+[18:00:16.138] [bmv2] [D] [thread 67107] [0.0] [cxt 0] Deparsing header 'ipv4'
+[18:00:16.138] [bmv2] [D] [thread 67107] [0.0] [cxt 0] Deparser 'deparser': end
+[18:00:16.138] [bmv2] [D] [thread 67109] [0.0] [cxt 0] Transmitting packet of size 52 out of port 2
+[18:00:57.262] [bmv2] [T] [thread 68655] bm_get_config
+[18:00:57.263] [bmv2] [T] [thread 68655] bm_table_modify_entry
+[18:00:57.263] [bmv2] [D] [thread 68655] Modified entry 2 in table 'MyIngress.myTunnel_exact'
